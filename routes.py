@@ -15,6 +15,13 @@ def create_routes(app):
 
     @app.route('/register', methods=['GET', 'POST'])
     def register():
+        # Redirect if already logged in
+        if 'user_id' in session:
+            if session.get('role') == 'admin':
+                return redirect(url_for('admin_dashboard'))
+            else:
+                return redirect(url_for('index'))
+
         if request.method == 'POST':
             try:
                 username = request.form.get('username', '').strip()
@@ -69,6 +76,13 @@ def create_routes(app):
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
+        # Redirect if already logged in
+        if 'user_id' in session:
+            if session.get('role') == 'admin':
+                return redirect(url_for('admin_dashboard'))
+            else:
+                return redirect(url_for('index'))
+
         if request.method == 'POST':
             try:
                 username = request.form.get('username', '').strip()

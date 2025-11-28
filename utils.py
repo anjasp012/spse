@@ -28,3 +28,15 @@ def role_required(role):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Silakan login terlebih dahulu', 'warning')
+            return redirect(url_for('login'))
+        if session.get('role') != 'admin':
+            flash('Anda tidak memiliki akses ke halaman ini', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function

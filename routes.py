@@ -1,6 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, request, session, flash, jsonify
 from models import db, User, Favorite
-from utils import login_required, role_required
+from utils import login_required, role_required, admin_required
 from modules.redis_tender import fetch as redis_tender
 from modules.redis_nontender import fetch as redis_nontender
 from modules.fetch_tender import fetch as fetch_tender
@@ -112,9 +112,9 @@ def create_routes(app):
                 app.logger.info(f"User logged in: {username}")
                 flash(f'Selamat datang, {user.username}!', 'success')
                 if user.role == 'admin':
-                    return redirect(url_for('dashboard'))
-                elif user.role == 'user':
-                    return redirect(url_for('tender'))
+                    return redirect(url_for('admin_dashboard'))
+                else:
+                    return redirect(url_for('index'))
 
             except Exception as e:
                 db.session.rollback()
@@ -124,39 +124,203 @@ def create_routes(app):
 
         return render_template('login.html')
 
-    @app.route('/dashboard')
-    def dashboard():
-        if 'user_id' not in session:
-            flash('Silakan login terlebih dahulu', 'warning')
-            return redirect(url_for('login'))
-
-        user = User.query.get(session['user_id'])
-        return render_template('dashboard.html', user=user)
+    # Route moved to /admin
 
     @app.route('/favorites')
     def favorites_page():
         if 'user_id' not in session:
             flash('Silakan login terlebih dahulu', 'warning')
-            return redirect(url_for('login'))
-        return render_template('favorites.html')
+    @app.route("/admin/users")
+    @admin_required
+    def admin_users():
+        users = User.query.all()
+        now = datetime.now(jakarta)
+        return render_template("admin/users.html", users=users, now=now, active_page='users')
 
-    @app.route("/admin")
-    @login_required
-    @role_required('admin')
-    def admin_dashboard():
-        return render_template("admin_dashboard.html")
 
-    @app.route("/user")
-    @login_required
-    @role_required('user')
-    def user_dashboard():
-        return render_template("user_dashboard.html")
+    @app.route("/admin/users/add", methods=['GET', 'POST'])
+    @admin_required
+    def admin_users_add():
+        if request.method == 'POST':
+            try:
+                username = request.form.get('username', '').strip()
+                password = request.form.get('password', '')
+                confirm_password = request.form.get('confirm_password', '')
+                role = request.form.get('role', 'user')
+                active_until_str = request.form.get('active_until', '')
+
+                # Validation
+                if not username or not password:
+                    flash('Username dan password harus diisi', 'danger')
+                    return redirect(url_for('admin_users_add'))
+
+                if len(username) < 3 or len(username) > 50:
+                    flash('Username harus 3-50 karakter', 'danger')
+                    return redirect(url_for('admin_users_add'))
+
+                if not username.replace('_', '').isalnum():
+                    flash('Username hanya boleh huruf, angka, dan underscore', 'danger')
+                    return redirect(url_for('admin_users_add'))
+
+                if len(password) < 6:
+                    flash('Password minimal 6 karakter', 'danger')
+                    return redirect(url_for('admin_users_add'))
+
+                if password != confirm_password:
+                    flash('Password dan konfirmasi password tidak cocok', 'danger')
+                    return redirect(url_for('admin_users_add'))
+
+                if role not in ['admin', 'user']:
+                    flash('Role tidak valid', 'danger')
+                    return redirect(url_for('admin_users_add'))
+
+                # Check if username already exists
+                if User.query.filter_by(username=username).first():
+                    flash('Username sudah digunakan', 'danger')
+                    return redirect(url_for('admin_users_add'))
+
+                # Parse active_until
+                active_until = None
+                if active_until_str:
+                    try:
+                        # Parse datetime-local format: YYYY-MM-DDTHH:MM
+                        active_until = datetime.strptime(active_until_str, '%Y-%m-%dT%H:%M')
+                        active_until = jakarta.localize(active_until)
+
+                        # Validate future date
+                        if active_until <= datetime.now(jakarta):
+                            flash('Tanggal aktif harus di masa depan', 'danger')
+                            return redirect(url_for('admin_users_add'))
+                    except ValueError:
+                        flash('Format tanggal tidak valid', 'danger')
+                        return redirect(url_for('admin_users_add'))
+
+                # Create user
+                new_user = User(
+                    username=username,
+                    role=role,
+                    active_until=active_until
+                )
+                new_user.set_password(password)
+
+                db.session.add(new_user)
+                db.session.commit()
+
+                flash(f'User {username} berhasil ditambahkan', 'success')
+                return redirect(url_for('admin_users'))
+
+            except Exception as e:
+                db.session.rollback()
+                app.logger.error(f"Add user error: {str(e)}")
+                flash('Terjadi kesalahan saat menambahkan user', 'danger')
+                return redirect(url_for('admin_users_add'))
+
+        return render_template("admin/user_form.html", user=None, action='add')
+
+    @app.route("/admin/users/edit/<int:user_id>", methods=['GET', 'POST'])
+    @admin_required
+    def admin_users_edit(user_id):
+        user = User.query.get_or_404(user_id)
+
+        if request.method == 'POST':
+            try:
+                username = request.form.get('username', '').strip()
+                password = request.form.get('password', '')
+                confirm_password = request.form.get('confirm_password', '')
+                role = request.form.get('role', 'user')
+                active_until_str = request.form.get('active_until', '')
+
+                # Validation
+                if not username:
+                    flash('Username harus diisi', 'danger')
+                    return redirect(url_for('admin_users_edit', user_id=user_id))
+
+                if len(username) < 3 or len(username) > 50:
+                    flash('Username harus 3-50 karakter', 'danger')
+                    return redirect(url_for('admin_users_edit', user_id=user_id))
+
+                if not username.replace('_', '').isalnum():
+                    flash('Username hanya boleh huruf, angka, dan underscore', 'danger')
+                    return redirect(url_for('admin_users_edit', user_id=user_id))
+
+                # Check if username already exists (except current user)
+                existing_user = User.query.filter_by(username=username).first()
+                if existing_user and existing_user.id != user_id:
+                    flash('Username sudah digunakan', 'danger')
+                    return redirect(url_for('admin_users_edit', user_id=user_id))
+
+                # Validate password if provided
+                if password:
+                    if len(password) < 6:
+                        flash('Password minimal 6 karakter', 'danger')
+                        return redirect(url_for('admin_users_edit', user_id=user_id))
+
+                    if password != confirm_password:
+                        flash('Password dan konfirmasi password tidak cocok', 'danger')
+                        return redirect(url_for('admin_users_edit', user_id=user_id))
+
+                if role not in ['admin', 'user']:
+                    flash('Role tidak valid', 'danger')
+                    return redirect(url_for('admin_users_edit', user_id=user_id))
+
+                # Parse active_until
+                active_until = None
+                if active_until_str:
+                    try:
+                        active_until = datetime.strptime(active_until_str, '%Y-%m-%dT%H:%M')
+                        active_until = jakarta.localize(active_until)
+                    except ValueError:
+                        flash('Format tanggal tidak valid', 'danger')
+                        return redirect(url_for('admin_users_edit', user_id=user_id))
+
+                # Update user
+                user.username = username
+                user.role = role
+                user.active_until = active_until
+
+                if password:  # Only update password if provided
+                    user.set_password(password)
+
+                db.session.commit()
+
+                flash(f'User {username} berhasil diupdate', 'success')
+                return redirect(url_for('admin_users'))
+
+            except Exception as e:
+                db.session.rollback()
+                app.logger.error(f"Edit user error: {str(e)}")
+                flash('Terjadi kesalahan saat mengupdate user', 'danger')
+                return redirect(url_for('admin_users_edit', user_id=user_id))
+
+        return render_template("admin/user_form.html", user=user, action='edit')
+
+    @app.route("/admin/users/delete/<int:user_id>", methods=['POST'])
+    @admin_required
+    def admin_users_delete(user_id):
+        try:
+            # Prevent self-deletion
+            if user_id == session.get('user_id'):
+                flash('Anda tidak dapat menghapus akun sendiri', 'danger')
+                return redirect(url_for('admin_users'))
+
+            user = User.query.get_or_404(user_id)
+            username = user.username
+
+            db.session.delete(user)
+            db.session.commit()
+
+            flash(f'User {username} berhasil dihapus', 'success')
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Delete user error: {str(e)}")
+            flash('Terjadi kesalahan saat menghapus user', 'danger')
+
+        return redirect(url_for('admin_users'))
+
 
     @app.route("/")
-    def tender():
-        if 'user_id' not in session:
-            flash('Silakan login terlebih dahulu', 'warning')
-            return redirect(url_for('login'))
+    @login_required
+    def index():
         return render_template("tender.html")
 
     @app.route('/fetch-tender')

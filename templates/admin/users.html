@@ -1,0 +1,176 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Kelola User{% endblock %}
+{% block page_title %}Kelola User{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+<li class="breadcrumb-item active">Kelola User</li>
+{% endblock %}
+
+{% block extra_style %}
+<style>
+    .table-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .table-header h4 {
+        font-weight: 700;
+        color: #333;
+        margin: 0;
+    }
+
+    .btn-add {
+        background: var(--gradient-bg);
+        border: none;
+        color: white;
+        padding: 0.6rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-add:hover {
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(212, 136, 28, 0.3);
+        text-decoration: none;
+    }
+
+    .table thead th {
+        background: var(--gradient-bg);
+        color: white;
+        border: none;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+    .table tbody tr {
+        transition: all 0.3s;
+    }
+
+    .table tbody tr:hover {
+        background: #f8f9fa;
+        transform: scale(1.01);
+    }
+
+    .badge-active {
+        background-color: #28a745;
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+    }
+
+    .badge-expired {
+        background-color: #dc3545;
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-header">
+        <h4><i class="fas fa-table mr-2"></i>Daftar User</h4>
+        <a href="{{ url_for('admin_users_add') }}" class="btn-add">
+            <i class="fas fa-user-plus"></i>
+            <span>Tambah User</span>
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th width="50">ID</th>
+                    <th>Username</th>
+                    <th width="100">Role</th>
+                    <th width="180">Active Until</th>
+                    <th width="100">Status</th>
+                    <th width="150">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if users %}
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>
+                        <i class="fas fa-user mr-2 text-muted"></i>{{ user.username }}
+                        {% if user.id == session.user_id %}
+                        <span class="badge badge-info ml-2">You</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.role == 'admin' %}
+                        <span class="badge badge-danger"><i class="fas fa-user-shield mr-1"></i>Admin</span>
+                        {% else %}
+                        <span class="badge badge-secondary"><i class="fas fa-user mr-1"></i>User</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.active_until %}
+                        <small>{{ user.active_until.strftime('%d/%m/%Y %H:%M') }}</small>
+                        {% else %}
+                        <span class="text-muted"><small>Unlimited</small></span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.is_active() %}
+                        <span class="badge-active">Active</span>
+                        {% else %}
+                        <span class="badge-expired">Expired</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('admin_users_edit', user_id=user.id) }}" class="btn btn-sm btn-primary"
+                            title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        {% if user.id != session.user_id %}
+                        <form action="{{ url_for('admin_users_delete', user_id=user.id) }}" method="POST"
+                            style="display:inline;"
+                            onsubmit="return confirm('Yakin ingin menghapus user {{ user.username }}?');">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <button class="btn btn-sm btn-secondary" disabled title="Cannot delete yourself">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
+                        <p class="text-muted">Tidak ada user</p>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

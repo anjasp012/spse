@@ -130,6 +130,58 @@ def create_routes(app):
     def favorites_page():
         if 'user_id' not in session:
             flash('Silakan login terlebih dahulu', 'warning')
+            return redirect(url_for('login'))
+        return render_template('favorites.html')
+
+    @app.route("/admin")
+    @admin_required
+    def admin_dashboard():
+        import redis
+
+        # Get user statistics
+        total_users = User.query.count()
+        admin_count = User.query.filter_by(role='admin').count()
+        user_count = User.query.filter_by(role='user').count()
+
+        # Count active users
+        now = datetime.now(jakarta)
+        active_users = User.query.filter(
+            (User.active_until == None) | (User.active_until > now)
+        ).count()
+
+        # Count tender and non-tender data from Redis
+        try:
+            r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+
+            # Count tender data (keys with pattern tender:2025:*, tender:2024:*, etc.)
+            total_tender = 0
+            for year in range(2020, 2031):
+                pattern = f"tender:{year}:*"
+                total_tender += len(r.keys(pattern))
+
+            # Count non-tender data
+            total_nontender = 0
+            for year in range(2020, 2031):
+                pattern = f"nontender:{year}:*"
+                total_nontender += len(r.keys(pattern))
+
+        except Exception as e:
+            app.logger.error(f"Redis error in dashboard: {str(e)}")
+            total_tender = 0
+            total_nontender = 0
+
+        return render_template("admin/dashboard.html",
+                             total_users=total_users,
+                             admin_count=admin_count,
+                             user_count=user_count,
+                             active_users=active_users,
+                             total_tender=total_tender,
+                             total_nontender=total_nontender,
+                             active_page='dashboard')
+
+    # User dashboard removed - users go to / (index)
+
+    # ===== USER MANAGEMENT ROUTES =====
     @app.route("/admin/users")
     @admin_required
     def admin_users():

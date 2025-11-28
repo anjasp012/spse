@@ -14,10 +14,6 @@ logger = setup_logger(app)
 
 db.init_app(app)
 
-with app.app_context():
-    db.create_all()
-    logger.info("Database tables created/verified")
-
 create_routes(app)
 
 

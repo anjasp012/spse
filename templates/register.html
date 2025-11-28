@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Register | Sistem</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h2>Register Akun</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <label>Username</label>
+        <input type="text" name="username" required>
+
+        <label>Password</label>
+        <input type="password" name="password" required>
+
+        <label>Aktif Sampai</label>
+        <select name="duration" required>
+            <option value="3hari">3 Hari</option>
+            <option value="6hari">6 Hari</option>
+            <option value="1bulan">1 Bulan</option>
+        </select>
+
+        <button type="submit">Daftar</button>
+    </form>
+
+    <p style="text-align:center;margin-top:10px;">
+        Sudah punya akun? <a href="{{ url_for('login') }}">Login di sini</a>
+    </p>
+</div>
+</body>
+</html>

@@ -513,11 +513,23 @@ async def scrape_instance(session, redis, slug, tahun, retries=3):
 
                 json_data = await resp.json()
                 redis_key = f"spse:{tahun}:tender"
-                # Hapus key lama di awal, lakukan hanya sekali sebelum semua scrape
+                redis_set_key = f"spse:{tahun}:tender:codes"  # Set untuk tracking kode yang sudah ada
+
+                # Loop dan simpan data dengan pengecekan duplikasi
                 for row in json_data.get("data", []):
                     row_dict = {str(i): v for i,v in enumerate(row)}
                     row_dict["instansi"] = slug
-                    await redis.rpush(redis_key, json.dumps(row_dict))
+
+                    # Kode tender ada di index 0
+                    kode_tender = row_dict.get("0")
+                    if kode_tender:
+                        # Cek apakah kode sudah ada di set
+                        is_duplicate = await redis.sismember(redis_set_key, kode_tender)
+                        if not is_duplicate:
+                            # Simpan data dan tambahkan kode ke set
+                            await redis.rpush(redis_key, json.dumps(row_dict))
+                            await redis.sadd(redis_set_key, kode_tender)
+
                 return True
 
         except Exception as e:
@@ -533,10 +545,18 @@ async def scrape_instance(session, redis, slug, tahun, retries=3):
 async def fetch_and_store(tahun):
     redis = await aioredis.from_url(Config.REDIS_URL)
     redis_key = f"spse:{tahun}:tender"
+    redis_set_key = f"spse:{tahun}:tender:codes"
 
-    # Hapus key lama di awal
+    # Hapus key lama di awal (both list and set)
+    deleted_count = 0
     if await redis.exists(redis_key):
         await redis.delete(redis_key)
+        deleted_count += 1
+    if await redis.exists(redis_set_key):
+        await redis.delete(redis_set_key)
+        deleted_count += 1
+
+    if deleted_count > 0:
         print(f"🗑 Menghapus data lama untuk tahun {tahun}")
 
     async with aiohttp.ClientSession() as session:
@@ -573,9 +593,58 @@ async def fetch_and_store(tahun):
                 attempt_num += 1
             remaining = failed
 
+    # Cleanup duplikasi setelah scraping selesai
+    print(f"\n🧹 Membersihkan duplikasi data...")
+    await cleanup_duplicates(redis, tahun)
+
     await redis.close()
     print(f"\n✅ Selesai! Total {total} instances berhasil di-scrape untuk tahun {tahun}")
     return True
+
+async def cleanup_duplicates(redis, tahun):
+    """Membersihkan data duplikat berdasarkan kode tender"""
+    redis_key = f"spse:{tahun}:tender"
+
+    # Ambil semua data
+    items = await redis.lrange(redis_key, 0, -1)
+
+    if not items:
+        print(f"   Tidak ada data untuk dibersihkan")
+        return
+
+    # Track kode yang sudah ditemukan dan data unik
+    seen_codes = set()
+    unique_data = []
+    duplicate_count = 0
+
+    for item in items:
+        row_dict = json.loads(item)
+        kode_tender = row_dict.get("0")
+
+        if kode_tender:
+            if kode_tender not in seen_codes:
+                seen_codes.add(kode_tender)
+                unique_data.append(item)
+            else:
+                duplicate_count += 1
+        else:
+            # Data tanpa kode tetap disimpan
+            unique_data.append(item)
+
+    if duplicate_count > 0:
+        print(f"   Ditemukan {duplicate_count} duplikasi dari {len(items)} data")
+
+        # Hapus semua data lama
+        await redis.delete(redis_key)
+
+        # Simpan ulang data yang unik
+        if unique_data:
+            await redis.rpush(redis_key, *unique_data)
+
+        print(f"   ✅ {duplicate_count} duplikasi telah dihapus, tersisa {len(unique_data)} data unik")
+    else:
+        print(f"   ✅ Tidak ada duplikasi ditemukan ({len(unique_data)} data unik)")
+
 
 def fetch(tahun):
     return asyncio.run(fetch_and_store(tahun))

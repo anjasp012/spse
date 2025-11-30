@@ -4,7 +4,7 @@ import json
 from math import ceil
 from config import Config
 
-async def fetch_from_redis(tahun='2025', instansi=None, kategoriId=None, page=1, per_page=100, tahapan=None, status=None, kementerian=None):
+async def fetch_from_redis(tahun='2025', instansi=None, kategoriId=None, page=1, per_page=100, tahapan=None, status=None, kementerian=None, search_nama=None):
     redis = await aioredis.from_url(Config.REDIS_URL)
     redis_key = f"spse:{tahun}:tender"
 
@@ -32,6 +32,10 @@ async def fetch_from_redis(tahun='2025', instansi=None, kategoriId=None, page=1,
             results = [r for r in results if "Batal" in (r.get("3") or "")]
         elif status == "Gagal":
             results = [r for r in results if "Gagal" in (r.get("3") or "")]
+    if search_nama:
+        # Case-insensitive search di field nama paket (index '1')
+        search_lower = search_nama.lower()
+        results = [r for r in results if search_lower in (r.get("1") or "").lower()]
 
     # Pagination
     total = len(results)
@@ -49,5 +53,5 @@ async def fetch_from_redis(tahun='2025', instansi=None, kategoriId=None, page=1,
         "tahun": tahun
     }
 
-def fetch(tahun='2025', instansi=None, kategoriId=None, page=1, per_page=100, tahapan=None, status=None, kementerian=None):
-    return asyncio.run(fetch_from_redis(tahun=tahun, instansi=instansi, kategoriId=kategoriId, page=page, per_page=per_page, tahapan=tahapan, status=status, kementerian=kementerian))
+def fetch(tahun='2025', instansi=None, kategoriId=None, page=1, per_page=100, tahapan=None, status=None, kementerian=None, search_nama=None):
+    return asyncio.run(fetch_from_redis(tahun=tahun, instansi=instansi, kategoriId=kategoriId, page=page, per_page=per_page, tahapan=tahapan, status=status, kementerian=kementerian, search_nama=search_nama))

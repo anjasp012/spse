@@ -13,6 +13,20 @@ jakarta = pytz.timezone('Asia/Jakarta')
 
 def create_routes(app):
 
+    @app.before_request
+    def update_last_activity():
+        if 'user_id' in session:
+            try:
+                # Update last_activity setiap request agar status online akurat
+                # Untuk performa, bisa dibatasi misal update tiap 5 menit, tapi untuk sekarang realtime dulu
+                user = User.query.get(session['user_id'])
+                if user:
+                    user.last_activity = datetime.now(jakarta)
+                    db.session.commit()
+            except Exception as e:
+                # Ignore error during activity update to not block request
+                pass
+
     @app.route('/register', methods=['GET', 'POST'])
     def register():
         # Redirect if already logged in
@@ -109,7 +123,8 @@ def create_routes(app):
 
                 # 🔒 Cek apakah user sedang login di tempat lain (kecuali admin)
                 if user.session_id and user.role != 'admin':
-                    flash('Akun ini sudah login di perangkat lain. Logout dulu sebelum login lagi.', 'danger')
+                    last_active = user.last_activity.strftime("%d-%m-%Y %H:%M") if user.last_activity else "Baru saja"
+                    flash(f'⚠️ Login Ditolak: Akun sedang aktif di perangkat lain (Terakhir aktif: {last_active}).\nSilakan logout dari perangkat lama atau tunggu sesi berakhir.', 'danger')
                     return redirect(url_for('login'))
 
                 # ✅ Login berhasil
@@ -418,8 +433,9 @@ def create_routes(app):
             kategoriId = request.args.get('kategoriId')
             tahapan = request.args.get('tahapan')
             status = request.args.get('status')
+            search_nama = request.args.get('search_nama')
 
-            tender = fetch_tender(tahun=tahun, instansi=final_instansi, kategoriId=kategoriId, page=page, per_page=per_page, tahapan=tahapan, status=status, kementerian=kementerian)
+            tender = fetch_tender(tahun=tahun, instansi=final_instansi, kategoriId=kategoriId, page=page, per_page=per_page, tahapan=tahapan, status=status, kementerian=kementerian, search_nama=search_nama)
             return jsonify(tender)
         except ValueError as e:
             return jsonify({"error": f"Invalid input: {str(e)}"}), 400

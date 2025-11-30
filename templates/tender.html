@@ -343,21 +343,25 @@
         <div class="filter-card">
             <div class="form-row align-items-end">
                 <!-- Baris 1: Filter Utama -->
-                <div class="col-md-3 mb-3">
+                                 <div class="col-md-4 mb-3">
+                    <label><i class="fas fa-search mr-1"></i> Cari Nama Paket</label>
+                    <input type="text" id="searchNama" class="form-control" placeholder="Ketik nama paket...">
+                </div>
+                <div class="col-md-4 mb-3">
                     <label><i class="fas fa-building mr-1"></i> LPSE/Instansi</label>
                     <select id="filterLPSE" class="form-control filter-input">
                         <option value="">Semua LPSE</option>
                         <!-- Options will be loaded dynamically from Redis -->
                     </select>
                 </div>
-                <div class="col-md-3 mb-3">
+                <div class="col-md-4 mb-3">
                     <label><i class="fas fa-landmark mr-1"></i> Kementerian/Lembaga</label>
                     <select id="filterKementerian" class="form-control filter-input">
                         <option value="">Semua K/L</option>
                         <!-- Options will be loaded dynamically from Redis -->
                     </select>
                 </div>
-                <div class="col-md-3 mb-3">
+                <div class="col-md-4 mb-3">
                     <label><i class="fas fa-list-alt mr-1"></i> Kategori</label>
                     <select id="filterKategori" class="form-control filter-input">
                         <option value="">Semua Kategori</option>
@@ -374,7 +378,7 @@
                         <option value="Pekerjaan Konstruksi Terintegrasi">Pekerjaan Konstruksi Terintegrasi</option>
                     </select>
                 </div>
-                <div class="col-md-3 mb-3">
+                <div class="col-md-4 mb-3">
                     <label><i class="fas fa-tasks mr-1"></i> Tahapan</label>
                     <select id="filterTahapan" class="form-control filter-input">
                         <option value="">Semua Tahapan</option>
@@ -383,7 +387,7 @@
                 </div>
 
                 <!-- Baris 2: Tahun dan Button -->
-                <div class="col-md-3 mb-3 mb-md-0">
+                <div class="col-md-4 mb-3">
                     <label><i class="fas fa-calendar-alt mr-1"></i> Tahun</label>
                     <select id="filterTahun" class="form-control filter-input">
                         <option selected value="2025">2025</option>
@@ -476,6 +480,7 @@
             const kementerian = $("#filterKementerian").val();
             const tahapan = $("#filterTahapan").val();
             const lpse = $("#filterLPSE").val();
+            const searchNama = $("#searchNama").val().trim();
 
             // Construct kategori string if needed, or pass raw
             const kategori = kategoriId ? kategoriId + ' - TA ' + tahun : undefined;
@@ -491,7 +496,8 @@
                     kategoriId: kategori,
                     kementerian: kementerian,
                     tahapan: tahapan,
-                    lpse: lpse
+                    lpse: lpse,
+                    search_nama: searchNama
                 },
                 success: function (data) {
                     $("#loading").hide();
@@ -733,6 +739,16 @@
             $(".filter-input").on('change', function () {
                 currentPage = 1;
                 loadData(currentPage);
+            });
+
+            // Search with debouncing
+            let searchTimeout;
+            $("#searchNama").on('input', function () {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(function () {
+                    currentPage = 1;
+                    loadData(currentPage);
+                }, 500); // 500ms delay after user stops typing
             });
 
             $("#fetchData").click(function () {

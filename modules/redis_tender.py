@@ -547,6 +547,10 @@ async def fetch_and_store(tahun):
     redis_key = f"spse:{tahun}:tender"
     redis_set_key = f"spse:{tahun}:tender:codes"
 
+    # Reset progress dan set status
+    await redis.set("spse:progress:tender", 0)
+    await redis.set("spse:status:tender", "running")
+
     # Hapus key lama di awal (both list and set)
     deleted_count = 0
     if await redis.exists(redis_key):
@@ -578,10 +582,16 @@ async def fetch_and_store(tahun):
                 results = await asyncio.gather(*tasks)
                 all_results.extend(zip(batch, results))
 
+                # Update progress ke Redis
+                processed_count = batch_idx * batch_size
+                if processed_count > total: processed_count = total
+                progress = int((processed_count / total) * 100)
+                await redis.set("spse:progress:tender", progress)
+
                 # Delay antar batch (PENTING untuk menghindari 429)
                 if batch_idx < len(batches):
                     delay = random.uniform(2.0, 4.0)
-                    print(f"    💤 Delay {delay:.1f}s sebelum batch berikutnya...")
+                    print(f"    💤 Delay {delay:.1f}s sebelum batch berikutnya... (Progress: {progress}%)")
                     await asyncio.sleep(delay)
 
             # Filter instance yang gagal
@@ -592,6 +602,10 @@ async def fetch_and_store(tahun):
                 await asyncio.sleep(10)  # Delay lebih lama sebelum retry semua yang gagal
                 attempt_num += 1
             remaining = failed
+
+    # Set progress 100% sebelum cleanup
+    await redis.set("spse:progress:tender", 100)
+    await redis.delete("spse:status:tender")
 
     # Cleanup duplikasi setelah scraping selesai
     print(f"\n🧹 Membersihkan duplikasi data...")
@@ -648,3 +662,11 @@ async def cleanup_duplicates(redis, tahun):
 
 def fetch(tahun):
     return asyncio.run(fetch_and_store(tahun))
+
+if __name__ == "__main__":
+    import sys
+    # Ambil tahun dari argumen, default 2025
+    tahun_scrape = int(sys.argv[1]) if len(sys.argv) > 1 else 2025
+
+    print(f"🚀 Memulai scraping manual untuk tahun {tahun_scrape}...")
+    fetch(tahun_scrape)

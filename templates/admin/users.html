@@ -88,9 +88,9 @@
 
 {% block content %}
 <div class="table-card">
-    <div class="table-header">
+    <div class="table-header d-flex align-items-center justify-content-between mb-3">
         <h4><i class="fas fa-table mr-2"></i>Daftar User</h4>
-        <a href="{{ url_for('admin_users_add') }}" class="btn-add">
+        <a href="{{ url_for('admin_users_add') }}" class="btn btn-primary">
             <i class="fas fa-user-plus"></i>
             <span>Tambah User</span>
         </a>

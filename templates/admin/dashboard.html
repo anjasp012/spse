@@ -9,258 +9,145 @@
 {% endblock %}
 
 {% block extra_style %}
-<style>
-    .stats-card {
-        background: white;
-        border-radius: 15px;
-        padding: 1.5rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-        margin-bottom: 1.5rem;
-        transition: transform 0.3s, box-shadow 0.3s;
-        border-left: 4px solid transparent;
-    }
-
-    .stats-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-    }
-
-    .stats-card.orange {
-        border-left-color: #d4881c;
-    }
-
-    .stats-card.maroon {
-        border-left-color: #8b1a1a;
-    }
-
-    .stats-card.blue {
-        border-left-color: #1e88e5;
-    }
-
-    .stats-card.green {
-        border-left-color: #28a745;
-    }
-
-    .stats-card.purple {
-        border-left-color: #9c27b0;
-    }
-
-    .stats-card.teal {
-        border-left-color: #00897b;
-    }
-
-    .stats-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .stats-icon.orange {
-        background: linear-gradient(135deg, #d4881c, #f39c2c);
-        color: white;
-    }
-
-    .stats-icon.maroon {
-        background: linear-gradient(135deg, #8b1a1a, #b52a2a);
-        color: white;
-    }
-
-    .stats-icon.blue {
-        background: linear-gradient(135deg, #1e88e5, #42a5f5);
-        color: white;
-    }
-
-    .stats-icon.green {
-        background: linear-gradient(135deg, #28a745, #5cb85c);
-        color: white;
-    }
-
-    .stats-icon.purple {
-        background: linear-gradient(135deg, #9c27b0, #ba68c8);
-        color: white;
-    }
-
-    .stats-icon.teal {
-        background: linear-gradient(135deg, #00897b, #4db6ac);
-        color: white;
-    }
-
-    .stats-number {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #333;
-        margin: 0;
-    }
-
-    .stats-label {
-        color: #666;
-        font-size: 0.9rem;
-        font-weight: 500;
-        margin-top: 0.5rem;
-    }
-
-    .action-card {
-        background: white;
-        border-radius: 15px;
-        padding: 2rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-        margin-bottom: 1.5rem;
-    }
-
-    .action-card h4 {
-        font-weight: 700;
-        color: #333;
-        margin-bottom: 1.5rem;
-    }
-
-    .btn-action {
-        background: var(--gradient-bg);
-        border: none;
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: all 0.3s;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        justify-content: center;
-        text-decoration: none;
-        width: 100%;
-    }
-
-    .btn-action:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(212, 136, 28, 0.3);
-        color: white;
-        text-decoration: none;
-    }
-
-    .btn-action i {
-        font-size: 1.2rem;
-    }
-
-    .btn-fetch {
-        background: linear-gradient(135deg, #1e88e5, #42a5f5);
-        padding: 0.8rem 1.2rem;
-    }
-
-    .btn-fetch:hover {
-        box-shadow: 0 5px 15px rgba(30, 136, 229, 0.3);
-    }
-</style>
+<!-- No custom style needed, using Bootstrap 4 native classes -->
 {% endblock %}
 
 {% block content %}
 <!-- Statistics Cards -->
 <div class="row">
-    <div class="col-lg-2 col-md-4 col-sm-6">
-        <div class="stats-card orange">
-            <div class="stats-icon orange">
-                <i class="fas fa-users"></i>
+    <!-- Total Users -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Users</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_users }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
             </div>
-            <div class="stats-number">{{ total_users }}</div>
-            <div class="stats-label">Total Users</div>
         </div>
     </div>
-    <div class="col-lg-2 col-md-4 col-sm-6">
-        <div class="stats-card maroon">
-            <div class="stats-icon maroon">
-                <i class="fas fa-user-shield"></i>
+
+    <!-- Active Users -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Active Users</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_users }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-user-check fa-2x text-gray-300"></i>
+                    </div>
+                </div>
             </div>
-            <div class="stats-number">{{ admin_count }}</div>
-            <div class="stats-label">Admin Users</div>
         </div>
     </div>
-    <div class="col-lg-2 col-md-4 col-sm-6">
-        <div class="stats-card blue">
-            <div class="stats-icon blue">
-                <i class="fas fa-user"></i>
+
+    <!-- Data Tender -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Data Tender
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_tender }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-gavel fa-2x text-gray-300"></i>
+                    </div>
+                </div>
             </div>
-            <div class="stats-number">{{ user_count }}</div>
-            <div class="stats-label">Regular Users</div>
         </div>
     </div>
-    <div class="col-lg-2 col-md-4 col-sm-6">
-        <div class="stats-card green">
-            <div class="stats-icon green">
-                <i class="fas fa-user-check"></i>
+
+    <!-- Data Non-Tender -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Data Non-Tender</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_nontender }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-handshake fa-2x text-gray-300"></i>
+                    </div>
+                </div>
             </div>
-            <div class="stats-number">{{ active_users }}</div>
-            <div class="stats-label">Active Users</div>
-        </div>
-    </div>
-    <div class="col-lg-2 col-md-4 col-sm-6">
-        <div class="stats-card purple">
-            <div class="stats-icon purple">
-                <i class="fas fa-gavel"></i>
-            </div>
-            <div class="stats-number">{{ total_tender }}</div>
-            <div class="stats-label">Data Tender</div>
-        </div>
-    </div>
-    <div class="col-lg-2 col-md-4 col-sm-6">
-        <div class="stats-card teal">
-            <div class="stats-icon teal">
-                <i class="fas fa-handshake"></i>
-            </div>
-            <div class="stats-number">{{ total_nontender }}</div>
-            <div class="stats-label">Data Non-Tender</div>
         </div>
     </div>
 </div>
 
 <!-- Fetch Data Section -->
-<div class="row mt-3">
-    <div class="col-12">
-        <div class="action-card">
-            <h4><i class="fas fa-download mr-2"></i>Fetch Data dari SPSE</h4>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <button class="btn-action btn-fetch" id="fetchTenderBtn">
-                        <i class="fas fa-gavel"></i>
-                        <span>Fetch Data Tender</span>
-                    </button>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <button class="btn-action btn-fetch" id="fetchNonTenderBtn">
-                        <i class="fas fa-handshake"></i>
-                        <span>Fetch Data Non-Tender</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Quick Actions -->
 <div class="row">
-    <div class="col-12">
-        <div class="action-card">
-            <h4><i class="fas fa-bolt mr-2"></i>Quick Actions</h4>
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <a href="{{ url_for('admin_users') }}" class="btn-action">
-                        <i class="fas fa-users-cog"></i>
-                        <span>Kelola User</span>
-                    </a>
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Fetch Data Tender</h6>
+            </div>
+            <div class="card-body">
+                <p>Ambil data tender terbaru dari SPSE.</p>
+                <div class="form-group">
+                    <label for="fetchTahunTender">Pilih Tahun:</label>
+                    <select class="form-control" id="fetchTahunTender">
+                        <option value="2025" selected>2025</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                        <option value="2021">2021</option>
+                        <option value="2020">2020</option>
+                    </select>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <a href="{{ url_for('admin_users_add') }}" class="btn-action">
-                        <i class="fas fa-user-plus"></i>
-                        <span>Tambah User</span>
-                    </a>
+                <button class="btn btn-primary btn-block" id="fetchTenderBtn">
+                    <i class="fas fa-download mr-2"></i> Fetch Data Tender
+                </button>
+                <!-- Progress Bar Tender -->
+                <div id="progressContainerTender" class="mt-3 d-none">
+                    <div class="progress">
+                        <div id="progressBarTender" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%">0%</div>
+                    </div>
+                    <small class="text-muted mt-1 d-block text-center" id="progressTextTender">Sedang memproses...</small>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <a href="{{ url_for('index') }}" class="btn-action">
-                        <i class="fas fa-table"></i>
-                        <span>Lihat Data</span>
-                    </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-warning">Fetch Data Non-Tender</h6>
+            </div>
+            <div class="card-body">
+                <p>Ambil data non-tender terbaru dari SPSE.</p>
+                <div class="form-group">
+                    <label for="fetchTahunNonTender">Pilih Tahun:</label>
+                    <select class="form-control" id="fetchTahunNonTender">
+                        <option value="2025" selected>2025</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                        <option value="2021">2021</option>
+                        <option value="2020">2020</option>
+                    </select>
+                </div>
+                <button class="btn btn-warning btn-block text-white" id="fetchNonTenderBtn">
+                    <i class="fas fa-download mr-2"></i> Fetch Data Non-Tender
+                </button>
+                <!-- Progress Bar Non-Tender -->
+                <div id="progressContainerNonTender" class="mt-3 d-none">
+                    <div class="progress">
+                        <div id="progressBarNonTender" class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar" style="width: 0%">0%</div>
+                    </div>
+                    <small class="text-muted mt-1 d-block text-center" id="progressTextNonTender">Sedang memproses...</small>
                 </div>
             </div>
         </div>
@@ -270,54 +157,7 @@
 
 {% block extra_script %}
 <script>
-    $(document).ready(function () {
-        // Fetch Tender Button
-        $('#fetchTenderBtn').click(function () {
-            if (!confirm('Fetch data tender untuk tahun 2025? Proses ini akan memakan waktu.')) {
-                return;
-            }
-
-            $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Fetching...');
-
-            $.ajax({
-                url: '/redis-tender',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ tahun: '2025' }),
-                success: function (response) {
-                    alert('Fetch tender berhasil!');
-                    location.reload();
-                },
-                error: function (xhr) {
-                    alert('Error: ' + (xhr.responseJSON?.error || 'Fetch gagal'));
-                    $('#fetchTenderBtn').prop('disabled', false).html('<i class="fas fa-gavel mr-2"></i> Fetch Data Tender');
-                }
-            });
-        });
-
-        // Fetch Non-Tender Button
-        $('#fetchNonTenderBtn').click(function () {
-            if (!confirm('Fetch data non-tender untuk tahun 2025? Proses ini akan memakan waktu.')) {
-                return;
-            }
-
-            $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Fetching...');
-
-            $.ajax({
-                url: '/redis-nontender',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ tahun: '2025' }),
-                success: function (response) {
-                    alert('Fetch non-tender berhasil!');
-                    location.reload();
-                },
-                error: function (xhr) {
-                    alert('Error: ' + (xhr.responseJSON?.error || 'Fetch gagal'));
-                    $('#fetchNonTenderBtn').prop('disabled', false).html('<i class="fas fa-handshake mr-2"></i> Fetch Data Non-Tender');
-                }
-            });
-        });
-    });
+    // Placeholder for future JavaScript functionality
+    console.log('Dashboard loaded');
 </script>
 {% endblock %}

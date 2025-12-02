@@ -541,6 +541,10 @@ async def fetch_and_store(tahun):
         await redis.delete(redis_key)
         print(f"🗑 Menghapus data lama untuk tahun {tahun}")
 
+    # Reset progress dan set tipe fetch
+    await redis.set("spse:progress:nontender", 0)
+    await redis.set("spse:status:nontender", "running")
+
     async with aiohttp.ClientSession() as session:
         remaining = instances.copy()
         total = len(remaining)
@@ -560,10 +564,16 @@ async def fetch_and_store(tahun):
                 results = await asyncio.gather(*tasks)
                 all_results.extend(zip(batch, results))
 
+                # Update progress ke Redis
+                processed_count = batch_idx * batch_size
+                if processed_count > total: processed_count = total
+                progress = int((processed_count / total) * 100)
+                await redis.set("spse:progress:nontender", progress)
+
                 # Delay antar batch (PENTING untuk menghindari 429)
                 if batch_idx < len(batches):
                     delay = random.uniform(2.0, 4.0)
-                    print(f"    💤 Delay {delay:.1f}s sebelum batch berikutnya...")
+                    print(f"    💤 Delay {delay:.1f}s sebelum batch berikutnya... (Progress: {progress}%)")
                     await asyncio.sleep(delay)
 
             # Filter instance yang gagal
@@ -574,6 +584,10 @@ async def fetch_and_store(tahun):
                 await asyncio.sleep(10)  # Delay lebih lama sebelum retry semua yang gagal
                 attempt_num += 1
             remaining = failed
+
+    # Set progress 100% dan hapus tipe fetch
+    await redis.set("spse:progress:nontender", 100)
+    await redis.delete("spse:status:nontender")
 
     await redis.close()
     print(f"\n✅ Selesai! Total {total} instances berhasil di-scrape untuk tahun {tahun}")

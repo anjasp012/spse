@@ -182,17 +182,19 @@ def create_routes(app):
         try:
             r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
-            # Count tender data (keys with pattern tender:2025:*, tender:2024:*, etc.)
+            # Count tender data
             total_tender = 0
             for year in range(2020, 2031):
-                pattern = f"tender:{year}:*"
-                total_tender += len(r.keys(pattern))
+                key = f"spse:{year}:tender"
+                if r.exists(key):
+                    total_tender += r.llen(key)
 
             # Count non-tender data
             total_nontender = 0
             for year in range(2020, 2031):
-                pattern = f"nontender:{year}:*"
-                total_nontender += len(r.keys(pattern))
+                key = f"spse:{year}:nontender"
+                if r.exists(key):
+                    total_nontender += r.llen(key)
 
         except Exception as e:
             app.logger.error(f"Redis error in dashboard: {str(e)}")
@@ -459,11 +461,6 @@ def create_routes(app):
         except Exception as e:
             return jsonify({"error": f"Server error: {str(e)}"}), 500
 
-    @app.route('/get-filter-options')
-    def get_filter_options():
-        try:
-            tahun = int(request.args.get('tahun', 2025))
-            filter_type = request.args.get('type', 'tahapan')  # tahapan, kategori, instansi
 
             # Validasi range tahun
             if tahun < 2020 or tahun > 2030:

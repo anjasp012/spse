@@ -137,7 +137,10 @@ Tambahkan baris ini (jalan setiap 10 menit):
 
 ```bash
 # Cleanup Session (Agar user yang lupa logout bisa login lagi setelah timeout)
-*/10 * * * * cd /var/www/spse && /var/www/spse/venv/bin/python cleanup_sessions.py >> /var/www/spse/cron.log 2>&1
+*/10 * * * * cd /var/www/spse && /var/www/spse/venv/bin/python cleanup_sessions.py >> /var/www/spse/cron_session.log 2>&1
+
+# Scraping Data Tender (Jam 06:00 dan 12:00)
+0 6,12 * * * cd /var/www/spse && /var/www/spse/venv/bin/python -m modules.redis_tender 2025 >> /var/www/spse/cron_scrape.log 2>&1
 ```
 
 ## 8. Maintenance

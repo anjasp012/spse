@@ -541,9 +541,10 @@ async def fetch_and_store(tahun):
         await redis.delete(redis_key)
         print(f"🗑 Menghapus data lama untuk tahun {tahun}")
 
-    # Reset progress dan set tipe fetch
-    await redis.set("spse:progress:nontender", 0)
-    await redis.set("spse:status:nontender", "running")
+    # Reset progress dan set status dengan keys yang konsisten
+    await redis.set("scraping:nontender:progress", 0)
+    await redis.set("scraping:nontender:status", "loading")
+    await redis.set("scraping:nontender:message", "Memulai scraping...")
 
     async with aiohttp.ClientSession() as session:
         remaining = instances.copy()
@@ -568,7 +569,8 @@ async def fetch_and_store(tahun):
                 processed_count = batch_idx * batch_size
                 if processed_count > total: processed_count = total
                 progress = int((processed_count / total) * 100)
-                await redis.set("spse:progress:nontender", progress)
+                await redis.set("scraping:nontender:progress", progress)
+                await redis.set("scraping:nontender:message", f"Processing batch {batch_idx}/{len(batches)}...")
 
                 # Delay antar batch (PENTING untuk menghindari 429)
                 if batch_idx < len(batches):
@@ -585,9 +587,10 @@ async def fetch_and_store(tahun):
                 attempt_num += 1
             remaining = failed
 
-    # Set progress 100% dan hapus tipe fetch
-    await redis.set("spse:progress:nontender", 100)
-    await redis.delete("spse:status:nontender")
+    # Set progress 100% dan selesai
+    await redis.set("scraping:nontender:progress", 100)
+    await redis.set("scraping:nontender:message", "Selesai!")
+    await redis.set("scraping:nontender:status", "done")
 
     await redis.close()
     print(f"\n✅ Selesai! Total {total} instances berhasil di-scrape untuk tahun {tahun}")

@@ -637,6 +637,64 @@ def create_routes(app):
             app.logger.error(f"Error fetching favorites detail: {str(e)}")
             return jsonify({'error': 'Failed to fetch favorites'}), 500
 
+    @app.route('/api/tender-status')
+    def tender_status():
+        """Check tender scraping progress from Redis"""
+        try:
+            import redis
+            r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+
+            # Check status from Redis keys
+            status_key = 'scraping:tender:status'
+            progress_key = 'scraping:tender:progress'
+            message_key = 'scraping:tender:message'
+
+            status = r.get(status_key) or 'idle'
+            progress = int(r.get(progress_key) or 0)
+            message = r.get(message_key) or 'Menunggu...'
+
+            return jsonify({
+                'status': status,
+                'progress': progress,
+                'message': message
+            })
+        except Exception as e:
+            app.logger.error(f"Error checking tender status: {str(e)}")
+            return jsonify({
+                'status': 'error',
+                'progress': 0,
+                'message': str(e)
+            }), 500
+
+    @app.route('/api/nontender-status')
+    def nontender_status():
+        """Check non-tender scraping progress from Redis"""
+        try:
+            import redis
+            r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+
+            # Check status from Redis keys
+            status_key = 'scraping:nontender:status'
+            progress_key = 'scraping:nontender:progress'
+            message_key = 'scraping:nontender:message'
+
+            status = r.get(status_key) or 'idle'
+            progress = int(r.get(progress_key) or 0)
+            message = r.get(message_key) or 'Menunggu...'
+
+            return jsonify({
+                'status': status,
+                'progress': progress,
+                'message': message
+            })
+        except Exception as e:
+            app.logger.error(f"Error checking non-tender status: {str(e)}")
+            return jsonify({
+                'status': 'error',
+                'progress': 0,
+                'message': str(e)
+            }), 500
+
     @app.route('/logout')
     def logout():
         user = User.query.filter_by(id=session['user_id']).first()

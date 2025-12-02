@@ -547,9 +547,10 @@ async def fetch_and_store(tahun):
     redis_key = f"spse:{tahun}:tender"
     redis_set_key = f"spse:{tahun}:tender:codes"
 
-    # Reset progress dan set status
-    await redis.set("spse:progress:tender", 0)
-    await redis.set("spse:status:tender", "running")
+    # Reset progress dan set status dengan keys yang konsisten
+    await redis.set("scraping:tender:progress", 0)
+    await redis.set("scraping:tender:status", "loading")
+    await redis.set("scraping:tender:message", "Memulai scraping...")
 
     # Hapus key lama di awal (both list and set)
     deleted_count = 0
@@ -586,7 +587,8 @@ async def fetch_and_store(tahun):
                 processed_count = batch_idx * batch_size
                 if processed_count > total: processed_count = total
                 progress = int((processed_count / total) * 100)
-                await redis.set("spse:progress:tender", progress)
+                await redis.set("scraping:tender:progress", progress)
+                await redis.set("scraping:tender:message", f"Processing batch {batch_idx}/{len(batches)}...")
 
                 # Delay antar batch (PENTING untuk menghindari 429)
                 if batch_idx < len(batches):
@@ -604,8 +606,9 @@ async def fetch_and_store(tahun):
             remaining = failed
 
     # Set progress 100% sebelum cleanup
-    await redis.set("spse:progress:tender", 100)
-    await redis.delete("spse:status:tender")
+    await redis.set("scraping:tender:progress", 100)
+    await redis.set("scraping:tender:message", "Membersihkan duplikasi...")
+    await redis.set("scraping:tender:status", "done")
 
     # Cleanup duplikasi setelah scraping selesai
     print(f"\n🧹 Membersihkan duplikasi data...")

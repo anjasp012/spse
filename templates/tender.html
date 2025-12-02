@@ -561,7 +561,7 @@
             const isFav = $btn.hasClass('btn-warning');
 
             const url = isFav ? '/remove-favorite' : '/add-favorite';
-            const data = { kode_tender: kode };
+            const data = { kode_tender: kode, type: 'tender' };
 
             $.ajax({
                 url: url,
@@ -722,7 +722,7 @@
             loadKementerianOptions();
 
             // Load favorites first
-            $.get('/get-favorites', function (data) {
+            $.get('/get-favorites?type=tender', function (data) {
                 window.favorites = data;
                 loadData(currentPage);
             });

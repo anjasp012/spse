@@ -4,7 +4,7 @@ import json
 from math import ceil
 from config import Config
 
-async def fetch_from_redis(tahun='2025', instansi=None, kategoriId=None, page=1, per_page=100):
+async def fetch_from_redis(tahun='2025', instansi=None, kategoriId=None, page=1, per_page=100, search_nama=None, kementerian=None, tahapan=None):
     redis = await aioredis.from_url(Config.REDIS_URL)
     redis_key = f"spse:{tahun}:nontender"
 
@@ -18,6 +18,13 @@ async def fetch_from_redis(tahun='2025', instansi=None, kategoriId=None, page=1,
         results = [r for r in results if r.get("instansi") == instansi]
     if kategoriId:
         results = [r for r in results if r.get("6") == kategoriId]
+    if search_nama:
+        search_nama_lower = search_nama.lower()
+        results = [r for r in results if search_nama_lower in str(r.get("1", "")).lower()]
+    if kementerian:
+        results = [r for r in results if kementerian.lower() in str(r.get("2", "")).lower()]
+    if tahapan:
+        results = [r for r in results if r.get("3") == tahapan]
 
     # Pagination
     total = len(results)
@@ -35,5 +42,5 @@ async def fetch_from_redis(tahun='2025', instansi=None, kategoriId=None, page=1,
         "tahun": tahun
     }
 
-def fetch(tahun='2025', instansi=None, kategoriId=None, page=1, per_page=100):
-    return asyncio.run(fetch_from_redis(tahun=tahun, instansi=instansi, kategoriId=kategoriId, page=page, per_page=per_page))
+def fetch(tahun='2025', instansi=None, kategoriId=None, page=1, per_page=100, search_nama=None, kementerian=None, tahapan=None):
+    return asyncio.run(fetch_from_redis(tahun=tahun, instansi=instansi, kategoriId=kategoriId, page=page, per_page=per_page, search_nama=search_nama, kementerian=kementerian, tahapan=tahapan))

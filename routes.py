@@ -8,6 +8,7 @@ from modules.fetch_nontender import fetch as fetch_nontender
 from datetime import datetime, timedelta
 import uuid
 import pytz
+import threading
 
 jakarta = pytz.timezone('Asia/Jakarta')
 
@@ -461,13 +462,23 @@ def create_routes(app):
         except Exception as e:
             return jsonify({"error": f"Server error: {str(e)}"}), 500
 
+    @app.route('/get-filter-options')
+    def get_filter_options():
+        """Get unique filter options from Redis data"""
+        try:
+            tahun = int(request.args.get('tahun', 2025))
+            filter_type = request.args.get('type', 'tahapan')
+            source = request.args.get('source', 'tender')  # 'tender' or 'nontender'
 
             # Validasi range tahun
             if tahun < 2020 or tahun > 2030:
                 return jsonify({"error": "Tahun harus antara 2020-2030"}), 400
 
-            # Ambil semua data dari Redis
-            all_data = fetch_tender(tahun=tahun, page=1, per_page=10000)
+            # Ambil semua data dari Redis berdasarkan source
+            if source == 'nontender':
+                all_data = fetch_nontender(tahun=tahun, page=1, per_page=10000)
+            else:
+                all_data = fetch_tender(tahun=tahun, page=1, per_page=10000)
 
             # Extract unique values based on filter type
             unique_values = set()
@@ -508,6 +519,7 @@ def create_routes(app):
             app.logger.error(f"Error fetching filter options: {str(e)}")
             return jsonify({"error": f"Server error: {str(e)}"}), 500
 
+
     @app.route("/non-tender")
     def non_tender():
         return render_template("non-tender.html")
@@ -531,13 +543,17 @@ def create_routes(app):
 
             instansi = request.args.get('instansi')
             kategoriId = request.args.get('kategoriId')
+            search_nama = request.args.get('search_nama')
+            kementerian = request.args.get('kementerian')
+            tahapan = request.args.get('tahapan')
 
-            tender = fetch_nontender(tahun=tahun, instansi=instansi, kategoriId=kategoriId, page=page, per_page=per_page)
+            tender = fetch_nontender(tahun=tahun, instansi=instansi, kategoriId=kategoriId, page=page, per_page=per_page, search_nama=search_nama, kementerian=kementerian, tahapan=tahapan)
             return jsonify(tender)
         except ValueError as e:
             return jsonify({"error": f"Invalid input: {str(e)}"}), 400
         except Exception as e:
             return jsonify({"error": f"Server error: {str(e)}"}), 500
+
 
     @app.route('/redis-non-tender', methods=['POST'])
     def redisnontender():
@@ -562,17 +578,19 @@ def create_routes(app):
 
         data = request.get_json()
         kode_tender = data.get('kode_tender')
+        fav_type = data.get('type', 'tender')  # 'tender' or 'nontender'
 
         if not kode_tender:
             return jsonify({'error': 'Kode tender required'}), 400
 
-        existing = Favorite.query.filter_by(user_id=session['user_id'], kode_tender=kode_tender).first()
+        existing = Favorite.query.filter_by(user_id=session['user_id'], kode_tender=kode_tender, type=fav_type).first()
         if existing:
             return jsonify({'message': 'Already favorited'}), 200
 
         fav = Favorite(
             user_id=session['user_id'],
-            kode_tender=kode_tender
+            kode_tender=kode_tender,
+            type=fav_type
         )
         db.session.add(fav)
         db.session.commit()
@@ -586,11 +604,12 @@ def create_routes(app):
 
         data = request.get_json()
         kode_tender = data.get('kode_tender')
+        fav_type = data.get('type', 'tender')  # 'tender' or 'nontender'
 
         if not kode_tender:
             return jsonify({'error': 'Kode tender required'}), 400
 
-        fav = Favorite.query.filter_by(user_id=session['user_id'], kode_tender=kode_tender).first()
+        fav = Favorite.query.filter_by(user_id=session['user_id'], kode_tender=kode_tender, type=fav_type).first()
         if fav:
             db.session.delete(fav)
             db.session.commit()
@@ -603,7 +622,8 @@ def create_routes(app):
         if 'user_id' not in session:
             return jsonify([]), 200
 
-        favorites = Favorite.query.filter_by(user_id=session['user_id']).all()
+        fav_type = request.args.get('type', 'tender')  # 'tender' or 'nontender'
+        favorites = Favorite.query.filter_by(user_id=session['user_id'], type=fav_type).all()
         favorite_kode_list = [f.kode_tender for f in favorites]
 
         # Jika hanya perlu list kode_tender untuk checking
@@ -615,13 +635,16 @@ def create_routes(app):
             # Get tahun dari parameter atau default 2025
             tahun = int(request.args.get('tahun', 2025))
 
-            # Ambil semua data dari Redis untuk tahun tersebut
-            all_data = fetch_tender(tahun=tahun, page=1, per_page=10000)
+            # Ambil semua data dari Redis berdasarkan type
+            if fav_type == 'nontender':
+                all_data = fetch_nontender(tahun=tahun, page=1, per_page=10000)
+            else:
+                all_data = fetch_tender(tahun=tahun, page=1, per_page=10000)
 
             # Filter hanya data yang ada di favorites
             filtered_data = []
             for item in all_data.get('data', []):
-                kode = item.get('0')  # kode tender ada di index 0
+                kode = item.get('0')  # kode ada di index 0
                 if kode in favorite_kode_list:
                     filtered_data.append({
                         'kode_tender': kode,
@@ -692,6 +715,62 @@ def create_routes(app):
             return jsonify({
                 'status': 'error',
                 'progress': 0,
+                'message': str(e)
+            }), 500
+
+    @app.route('/api/start-scraping-tender')
+    @admin_required
+    def start_scraping_tender():
+        """Start tender scraping in background thread"""
+        try:
+            tahun = int(request.args.get('tahun', 2025))
+
+            # Validasi range tahun
+            if tahun < 2020 or tahun > 2030:
+                return jsonify({"error": "Tahun harus antara 2020-2030"}), 400
+
+            # Jalankan scraping di background thread
+            thread = threading.Thread(target=redis_tender, args=(tahun,))
+            thread.daemon = True
+            thread.start()
+
+            return jsonify({
+                'status': 'loading',
+                'message': f'Scraping tender tahun {tahun} dimulai...',
+                'tahun': tahun
+            })
+        except Exception as e:
+            app.logger.error(f"Error starting tender scraping: {str(e)}")
+            return jsonify({
+                'status': 'error',
+                'message': str(e)
+            }), 500
+
+    @app.route('/api/start-scraping-nontender')
+    @admin_required
+    def start_scraping_nontender():
+        """Start non-tender scraping in background thread"""
+        try:
+            tahun = int(request.args.get('tahun', 2025))
+
+            # Validasi range tahun
+            if tahun < 2020 or tahun > 2030:
+                return jsonify({"error": "Tahun harus antara 2020-2030"}), 400
+
+            # Jalankan scraping di background thread
+            thread = threading.Thread(target=redis_nontender, args=(tahun,))
+            thread.daemon = True
+            thread.start()
+
+            return jsonify({
+                'status': 'loading',
+                'message': f'Scraping non-tender tahun {tahun} dimulai...',
+                'tahun': tahun
+            })
+        except Exception as e:
+            app.logger.error(f"Error starting non-tender scraping: {str(e)}")
+            return jsonify({
+                'status': 'error',
                 'message': str(e)
             }), 500
 

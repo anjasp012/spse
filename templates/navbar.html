@@ -53,11 +53,11 @@
                              <i class="fas fa-gavel mr-1"></i> Tender
                          </a>
                      </li>
-                     <!-- <li class="nav-item">
+                     <li class="nav-item">
                          <a class="nav-link {% if active_page == 'non-tender' %}active{% endif %}" href="/non-tender">
                              <i class="fas fa-handshake mr-1"></i> Non Tender
                          </a>
-                     </li> -->
+                     </li>
                      {% if session.get('user_id') %}
                      <!-- User sudah login - tampilkan dropdown -->
                      <li class="nav-item dropdown">
@@ -70,7 +70,8 @@
                              <a class="dropdown-item" href="/admin"><i class="fas fa-tachometer-alt mr-2"></i>Dashboard</a>
                              <div class="dropdown-divider"></div>
                              {% endif %}
-                             <a class="dropdown-item" href="/favorites"><i class="fas fa-star mr-2"></i>Favorit Saya</a>
+                             <a class="dropdown-item" href="/favorites?type=tender"><i class="fas fa-star mr-2"></i>Favorit Tender</a>
+                             <a class="dropdown-item" href="/favorites?type=nontender"><i class="fas fa-heart mr-2"></i>Favorit Non-Tender</a>
                              <div class="dropdown-divider"></div>
                              <a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt mr-2"></i>Logout</a>
                          </div>

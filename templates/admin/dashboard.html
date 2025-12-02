@@ -175,8 +175,8 @@
         progressBar.textContent = '0%';
         progressText.textContent = 'Memulai proses...';
 
-        // Call API
-        fetch(`/fetch-tender?tahun=${tahun}`, {
+        // Call API to start scraping
+        fetch(`/api/start-scraping-tender?tahun=${tahun}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -269,8 +269,8 @@
         progressBar.textContent = '0%';
         progressText.textContent = 'Memulai proses...';
 
-        // Call API
-        fetch(`/fetch-non-tender?tahun=${tahun}`, {
+        // Call API to start scraping
+        fetch(`/api/start-scraping-nontender?tahun=${tahun}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'

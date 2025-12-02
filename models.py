@@ -39,8 +39,9 @@ class Favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     kode_tender = db.Column(db.String(50), nullable=False)
+    type = db.Column(db.String(20), nullable=False, default='tender')  # 'tender' or 'nontender'
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(jakarta))
 
     user = db.relationship('User', backref=db.backref('favorites', lazy=True))
 
-    __table_args__ = (db.UniqueConstraint('user_id', 'kode_tender', name='unique_user_favorite'),)
+    __table_args__ = (db.UniqueConstraint('user_id', 'kode_tender', 'type', name='unique_user_favorite_type'),)

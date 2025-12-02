@@ -465,7 +465,7 @@ instances = [
     "tulungagung",
 ]
 
-async def scrape_instance(session, redis, slug, tahun, retries=3):
+async def scrape_instance(session, slug, tahun, retries=3):
     base = f"https://spse.inaproc.id/{slug}/nontender"
 
     for attempt in range(1, retries + 1):
@@ -512,15 +512,15 @@ async def scrape_instance(session, redis, slug, tahun, retries=3):
                     raise Exception(f"POST data gagal, status: {resp.status}")
 
                 json_data = await resp.json()
-                redis_key = f"spse:{tahun}:nontender"
 
-                # Hapus key lama hanya sekali di awal, bukan di sini
+                # Kumpulkan data dengan instansi
+                collected_data = []
                 for row in json_data.get("data", []):
                     row_dict = {str(i): v for i,v in enumerate(row)}
                     row_dict["instansi"] = slug
-                    await redis.rpush(redis_key, json.dumps(row_dict))
+                    collected_data.append(row_dict)
 
-                return True
+                return {"success": True, "data": collected_data}
 
         except Exception as e:
             if attempt < retries:
@@ -529,22 +529,23 @@ async def scrape_instance(session, redis, slug, tahun, retries=3):
                 print(f"⚠ Retry {attempt}/{retries} untuk {slug}: {e} (tunggu {wait_time:.1f}s)")
                 await asyncio.sleep(wait_time)
             else:
-                print(f"Gagal scrape {slug}: {e}")
-                return False
+                print(f"❌ Gagal scrape {slug}: {e}")
+                return {"success": False, "data": []}
 
 async def fetch_and_store(tahun):
     redis = await aioredis.from_url(Config.REDIS_URL)
     redis_key = f"spse:{tahun}:nontender"
 
-    # Hapus key lama di awal
-    if await redis.exists(redis_key):
-        await redis.delete(redis_key)
-        print(f"🗑 Menghapus data lama untuk tahun {tahun}")
-
     # Reset progress dan set status dengan keys yang konsisten
     await redis.set("scraping:nontender:progress", 0)
     await redis.set("scraping:nontender:status", "loading")
     await redis.set("scraping:nontender:message", "Memulai scraping...")
+
+    print(f"\n🚀 Memulai scraping non-tender tahun {tahun}...")
+    print(f"📊 Total {len(instances)} instances akan di-scrape\n")
+
+    # === FASE 1: AMBIL SEMUA DATA ===
+    all_collected_data = []
 
     async with aiohttp.ClientSession() as session:
         remaining = instances.copy()
@@ -554,46 +555,110 @@ async def fetch_and_store(tahun):
         while remaining:
             print(f"\n📊 Attempt #{attempt_num}: Scraping {len(remaining)} instances dari total {total}")
 
-            # PENTING: Batasi concurrent requests untuk menghindari 429
-            batch_size = 5  # Hanya 5 request sekaligus (sangat konservatif)
+            # Batasi concurrent requests untuk menghindari 429
+            batch_size = 5
             batches = [remaining[i:i + batch_size] for i in range(0, len(remaining), batch_size)]
 
             all_results = []
             for batch_idx, batch in enumerate(batches, 1):
                 print(f"  ⏳ Batch {batch_idx}/{len(batches)}: Processing {len(batch)} instances...")
-                tasks = [scrape_instance(session, redis, slug, tahun) for slug in batch]
+
+                # Scrape tanpa Redis parameter
+                tasks = [scrape_instance(session, slug, tahun) for slug in batch]
                 results = await asyncio.gather(*tasks)
                 all_results.extend(zip(batch, results))
+
+                # Kumpulkan data yang berhasil
+                for slug, result in zip(batch, results):
+                    if result["success"]:
+                        all_collected_data.extend(result["data"])
+                        print(f"    ✅ {slug}: {len(result['data'])} data")
+                    else:
+                        print(f"    ❌ {slug}: Failed")
 
                 # Update progress ke Redis
                 processed_count = batch_idx * batch_size
                 if processed_count > total: processed_count = total
-                progress = int((processed_count / total) * 100)
+                progress = int((processed_count / total) * 50)  # 50% untuk scraping
                 await redis.set("scraping:nontender:progress", progress)
-                await redis.set("scraping:nontender:message", f"Processing batch {batch_idx}/{len(batches)}...")
+                await redis.set("scraping:nontender:message", f"Scraping batch {batch_idx}/{len(batches)}... ({len(all_collected_data)} data terkumpul)")
 
-                # Delay antar batch (PENTING untuk menghindari 429)
+                # Delay antar batch
                 if batch_idx < len(batches):
                     delay = random.uniform(2.0, 4.0)
-                    print(f"    💤 Delay {delay:.1f}s sebelum batch berikutnya... (Progress: {progress}%)")
+                    print(f"    💤 Delay {delay:.1f}s sebelum batch berikutnya...")
                     await asyncio.sleep(delay)
 
             # Filter instance yang gagal
-            failed = [slug for slug, success in all_results if not success]
+            failed = [slug for slug, result in all_results if not result["success"]]
 
             if failed:
                 print(f"\n⚠ {len(failed)} instances gagal, akan diulang setelah delay 10 detik...")
-                await asyncio.sleep(10)  # Delay lebih lama sebelum retry semua yang gagal
+                await asyncio.sleep(10)
                 attempt_num += 1
             remaining = failed
 
-    # Set progress 100% dan selesai
+    print(f"\n✅ Scraping selesai! Total {len(all_collected_data)} data terkumpul")
+
+    # === FASE 2: CLEAN DUPLIKAT ===
+    await redis.set("scraping:nontender:progress", 60)
+    await redis.set("scraping:nontender:message", "Membersihkan duplikasi...")
+    print(f"\n🧹 Membersihkan duplikasi...")
+
+    seen_codes = set()
+    unique_data = []
+    duplicate_count = 0
+
+    for row_dict in all_collected_data:
+        kode_nontender = row_dict.get("0")  # Kode ada di index 0
+        if kode_nontender:
+            if kode_nontender not in seen_codes:
+                seen_codes.add(kode_nontender)
+                unique_data.append(row_dict)
+            else:
+                duplicate_count += 1
+        else:
+            # Data tanpa kode tetap disimpan
+            unique_data.append(row_dict)
+
+    print(f"   Ditemukan {duplicate_count} duplikasi dari {len(all_collected_data)} data")
+    print(f"   ✅ Tersisa {len(unique_data)} data unik")
+
+    # === FASE 3: REPLACE DATA DI REDIS ===
+    await redis.set("scraping:nontender:progress", 80)
+    await redis.set("scraping:nontender:message", "Menyimpan data ke Redis...")
+    print(f"\n💾 Menyimpan data ke Redis...")
+
+    # Hapus data lama
+    if await redis.exists(redis_key):
+        await redis.delete(redis_key)
+    print(f"   🗑 Data lama dihapus")
+
+    # Simpan data baru
+    if unique_data:
+        # Convert to JSON strings dan simpan batch
+        json_strings = [json.dumps(row) for row in unique_data]
+
+        # Push ke Redis dalam batch untuk performa lebih baik
+        batch_size = 1000
+        for i in range(0, len(json_strings), batch_size):
+            batch = json_strings[i:i + batch_size]
+            await redis.rpush(redis_key, *batch)
+
+            # Update progress
+            saved_count = min(i + batch_size, len(json_strings))
+            progress = 80 + int((saved_count / len(json_strings)) * 15)
+            await redis.set("scraping:nontender:progress", progress)
+
+    print(f"   ✅ {len(unique_data)} data tersimpan di Redis")
+
+    # Set progress 100% dan status done
     await redis.set("scraping:nontender:progress", 100)
     await redis.set("scraping:nontender:message", "Selesai!")
     await redis.set("scraping:nontender:status", "done")
 
     await redis.close()
-    print(f"\n✅ Selesai! Total {total} instances berhasil di-scrape untuk tahun {tahun}")
+    print(f"\n🎉 Selesai! Total {len(unique_data)} data unik tersimpan untuk tahun {tahun}\n")
     return True
 
 def fetch(tahun):

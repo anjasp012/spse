@@ -22,7 +22,9 @@ async def fetch_from_redis(tahun='2026', instansi=None, kategoriId=None, page=1,
     if kategoriId:
         results = [r for r in results if r.get("8") == kategoriId]
     if tahapan:
-        results = [r for r in results if r.get("3") == tahapan]
+        # Filter dengan mencocokkan 3-4 kata pertama
+        tahapan_words = tahapan.split()[:4]  # Ambil max 4 kata pertama dari filter
+        results = [r for r in results if all(word in (r.get("3") or "").split()[:4] for word in tahapan_words)]
     if status:
         if status == "Selesai":
             results = [r for r in results if r.get("3") == "Tender Sudah Selesai"]

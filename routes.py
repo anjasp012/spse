@@ -488,7 +488,9 @@ def create_routes(app):
                 for item in all_data.get('data', []):
                     tahapan = item.get('3')
                     if tahapan and tahapan != '-':
-                        unique_values.add(tahapan)
+                        # Skip tahapan yang mengandung [...] seperti [Ulang 1], [Ulang 2]
+                        if '[' not in tahapan and ']' not in tahapan:
+                            unique_values.add(tahapan)
 
             elif filter_type == 'kategori':
                 # Kategori biasanya dari metadata atau bisa dari field tertentu

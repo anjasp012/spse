@@ -380,9 +380,37 @@
                 </div>
                 <div class="col-md-4 mb-3">
                     <label><i class="fas fa-tasks mr-1"></i> Tahapan</label>
-                    <select id="filterTahapan" class="form-control filter-input">
+                        <select id="filterTahapan" class="form-control filter-input">
                         <option value="">Semua Tahapan</option>
-                        <!-- Options will be loaded dynamically from Redis -->
+                        <option>Pengumuman Prakualifikasi</option>
+                        <option>Download Dokumen Kualifikasi</option>
+                        <option>Penjelasan Dokumen Prakualifikasi</option>
+                        <option>Kirim Persyaratan Kualifikasi</option>
+                        <option>Evaluasi Dokumen Kualifikasi</option>
+                        <option>Pembuktian Kualifikasi</option>
+                        <option>Penetapan Hasil Kualifikasi</option>
+                        <option>Pengumuman Hasil Prakualifikasi</option>
+                        <option>Masa Sanggah Prakualifikasi</option>
+                        <option>Download Dokumen Pemilihan</option>
+                        <option>Pemberian Penjelasan</option>
+                        <option>Upload Dokumen Penawaran</option>
+                        <option>Pembukaan & Evaluasi Penawaran File I</option>
+                        <option>Pembukaan & Evaluasi Penawaran File II (Harga)</option>
+                        <option>Pengumuman Hasil Evaluasi Admin & Teknis</option>
+                        <option>Penetapan Pemenang</option>
+                        <option>Pengumuman Pemenang</option>
+                        <option>Masa Sanggah</option>
+                        <option>SPPBJ</option>
+                        <option>Penandatanganan Kontrak</option>
+                        <option>Seleksi batal</option>
+                        <option>Seleksi gagal</option>
+                        <option>Evaluasi Administrasi, Kualifikasi, Teknis, dan Harga</option>
+                        <option>Surat Penunjukan Penyedia Barang/Jasa</option>
+                        <option>Tender Sudah Selesai</option>
+                        <option>Tender Batal</option>
+                        <option>Tender Gagal</option>
+                        <option>Tidak Ada Jadwal</option>
+
                     </select>
                 </div>
                 <div class="col-md-4 mb-3">
@@ -646,28 +674,28 @@
             });
         }
 
-        function loadTahapanOptions(tahun) {
-            $.get(`/get-filter-options?tahun=${tahun}&type=tahapan&source=nontender`, function (data) {
-                const $select = $('#filterTahapan');
-                const currentValue = $select.val();
+        // function loadTahapanOptions(tahun) {
+        //     $.get(`/get-filter-options?tahun=${tahun}&type=tahapan&source=nontender`, function (data) {
+        //         const $select = $('#filterTahapan');
+        //         const currentValue = $select.val();
 
-                // Clear existing options except "Semua Tahapan"
-                $select.find('option:not(:first)').remove();
+        //         // Clear existing options except "Semua Tahapan"
+        //         $select.find('option:not(:first)').remove();
 
-                // Add options from Redis data
-                data.forEach(function (tahapan) {
-                    $select.append(`<option value="${tahapan}">${tahapan}</option>`);
-                });
+        //         // Add options from Redis data
+        //         data.forEach(function (tahapan) {
+        //             $select.append(`<option value="${tahapan}">${tahapan}</option>`);
+        //         });
 
-                // Restore selected value if it still exists
-                if (currentValue && data.includes(currentValue)) {
-                    $select.val(currentValue);
-                }
+        //         // Restore selected value if it still exists
+        //         if (currentValue && data.includes(currentValue)) {
+        //             $select.val(currentValue);
+        //         }
 
-                // Re-initialize Select2 to reflect new options
-                $select.trigger('change.select2');
-            });
-        }
+        //         // Re-initialize Select2 to reflect new options
+        //         $select.trigger('change.select2');
+        //     });
+        // }
 
         function loadKementerianOptions() {
             const $select = $('#filterKementerian');

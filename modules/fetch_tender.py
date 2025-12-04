@@ -37,6 +37,19 @@ async def fetch_from_redis(tahun='2026', instansi=None, kategoriId=None, page=1,
         search_lower = search_nama.lower()
         results = [r for r in results if search_lower in (r.get("1") or "").lower()]
 
+    # Sort by tahapan (field '3') - prioritize active tenders
+    def sort_key(item):
+        tahapan = item.get("3") or ""
+        # Priority order: Active stages first, then completed, then cancelled/failed
+        if "Selesai" in tahapan:
+            return (2, tahapan)  # Completed tenders - medium priority
+        elif "Batal" in tahapan or "Gagal" in tahapan:
+            return (3, tahapan)  # Cancelled/failed - lowest priority
+        else:
+            return (1, tahapan)  # Active tenders - highest priority
+
+    results.sort(key=sort_key)
+
     # Pagination
     total = len(results)
     total_pages = ceil(total / per_page)
@@ -53,5 +66,5 @@ async def fetch_from_redis(tahun='2026', instansi=None, kategoriId=None, page=1,
         "tahun": tahun
     }
 
-def fetch(tahun='2025', instansi=None, kategoriId=None, page=1, per_page=100, tahapan=None, status=None, kementerian=None, search_nama=None):
+def fetch(tahun='2026', instansi=None, kategoriId=None, page=1, per_page=100, tahapan=None, status=None, kementerian=None, search_nama=None):
     return asyncio.run(fetch_from_redis(tahun=tahun, instansi=instansi, kategoriId=kategoriId, page=page, per_page=per_page, tahapan=tahapan, status=status, kementerian=kementerian, search_nama=search_nama))

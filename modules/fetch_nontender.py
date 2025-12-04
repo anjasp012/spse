@@ -26,6 +26,19 @@ async def fetch_from_redis(tahun='2026', instansi=None, kategoriId=None, page=1,
     if tahapan:
         results = [r for r in results if r.get("3") == tahapan]
 
+    # Sort by tahapan (field '3') - prioritize active non-tenders
+    def sort_key(item):
+        tahapan = item.get("3") or ""
+        # Priority order: Active stages first, then completed, then cancelled/failed
+        if "Selesai" in tahapan:
+            return (2, tahapan)  # Completed - medium priority
+        elif "Batal" in tahapan or "Gagal" in tahapan:
+            return (3, tahapan)  # Cancelled/failed - lowest priority
+        else:
+            return (1, tahapan)  # Active - highest priority
+
+    results.sort(key=sort_key)
+
     # Pagination
     total = len(results)
     total_pages = ceil(total / per_page)

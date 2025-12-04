@@ -410,7 +410,7 @@ def create_routes(app):
     @app.route('/fetch-tender')
     def fetchtender():
         try:
-            tahun = int(request.args.get('tahun', 2025))
+            tahun = int(request.args.get('tahun', 2026))
             # Validasi range tahun
             if tahun < 2020 or tahun > 2030:
                 return jsonify({"error": "Tahun harus antara 2020-2030"}), 400
@@ -449,7 +449,7 @@ def create_routes(app):
     def redistender():
         try:
             data = request.get_json() or {}
-            tahun = int(data.get('tahun', 2025))
+            tahun = int(data.get('tahun', 2026))
 
             # Validasi range tahun
             if tahun < 2020 or tahun > 2030:
@@ -466,7 +466,7 @@ def create_routes(app):
     def get_filter_options():
         """Get unique filter options from Redis data"""
         try:
-            tahun = int(request.args.get('tahun', 2025))
+            tahun = int(request.args.get('tahun', 2026))
             filter_type = request.args.get('type', 'tahapan')
             source = request.args.get('source', 'tender')  # 'tender' or 'nontender'
 
@@ -527,7 +527,7 @@ def create_routes(app):
     @app.route('/fetch-non-tender')
     def fetchnon_tender():
         try:
-            tahun = int(request.args.get('tahun', 2025))
+            tahun = int(request.args.get('tahun', 2026))
             # Validasi range tahun
             if tahun < 2020 or tahun > 2030:
                 return jsonify({"error": "Tahun harus antara 2020-2030"}), 400
@@ -559,7 +559,7 @@ def create_routes(app):
     def redisnontender():
         try:
             data = request.get_json() or {}
-            tahun = int(data.get('tahun', 2025))
+            tahun = int(data.get('tahun', 2026))
 
             # Validasi range tahun
             if tahun < 2020 or tahun > 2030:
@@ -632,8 +632,8 @@ def create_routes(app):
 
         # Jika perlu detail, ambil dari Redis dan filter
         try:
-            # Get tahun dari parameter atau default 2025
-            tahun = int(request.args.get('tahun', 2025))
+            # Get tahun dari parameter atau default 2026
+            tahun = int(request.args.get('tahun', 2026))
 
             # Ambil semua data dari Redis berdasarkan type
             if fav_type == 'nontender':
@@ -723,7 +723,7 @@ def create_routes(app):
     def start_scraping_tender():
         """Start tender scraping in background thread"""
         try:
-            tahun = int(request.args.get('tahun', 2025))
+            tahun = int(request.args.get('tahun', 2026))
 
             # Validasi range tahun
             if tahun < 2020 or tahun > 2030:
@@ -751,7 +751,7 @@ def create_routes(app):
     def start_scraping_nontender():
         """Start non-tender scraping in background thread"""
         try:
-            tahun = int(request.args.get('tahun', 2025))
+            tahun = int(request.args.get('tahun', 2026))
 
             # Validasi range tahun
             if tahun < 2020 or tahun > 2030:

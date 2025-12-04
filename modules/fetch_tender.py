@@ -4,7 +4,7 @@ import json
 from math import ceil
 from config import Config
 
-async def fetch_from_redis(tahun='2025', instansi=None, kategoriId=None, page=1, per_page=100, tahapan=None, status=None, kementerian=None, search_nama=None):
+async def fetch_from_redis(tahun='2026', instansi=None, kategoriId=None, page=1, per_page=100, tahapan=None, status=None, kementerian=None, search_nama=None):
     redis = await aioredis.from_url(Config.REDIS_URL)
     redis_key = f"spse:{tahun}:tender"
 

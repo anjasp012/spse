@@ -4,7 +4,7 @@ import json
 from math import ceil
 from config import Config
 
-async def fetch_from_redis(tahun='2025', instansi=None, kategoriId=None, page=1, per_page=100, search_nama=None, kementerian=None, tahapan=None):
+async def fetch_from_redis(tahun='2026', instansi=None, kategoriId=None, page=1, per_page=100, search_nama=None, kementerian=None, tahapan=None):
     redis = await aioredis.from_url(Config.REDIS_URL)
     redis_key = f"spse:{tahun}:nontender"
 
@@ -42,5 +42,5 @@ async def fetch_from_redis(tahun='2025', instansi=None, kategoriId=None, page=1,
         "tahun": tahun
     }
 
-def fetch(tahun='2025', instansi=None, kategoriId=None, page=1, per_page=100, search_nama=None, kementerian=None, tahapan=None):
+def fetch(tahun='2026', instansi=None, kategoriId=None, page=1, per_page=100, search_nama=None, kementerian=None, tahapan=None):
     return asyncio.run(fetch_from_redis(tahun=tahun, instansi=instansi, kategoriId=kategoriId, page=page, per_page=per_page, search_nama=search_nama, kementerian=kementerian, tahapan=tahapan))

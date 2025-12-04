@@ -715,8 +715,8 @@ def fetch(tahun):
 
 if __name__ == "__main__":
     import sys
-    # Ambil tahun dari argumen, default 2025
-    tahun_scrape = int(sys.argv[1]) if len(sys.argv) > 1 else 2025
+    # Ambil tahun dari argumen, default 2026
+    tahun_scrape = int(sys.argv[1]) if len(sys.argv) > 1 else 2026
 
     print(f"🚀 Memulai scraping manual untuk tahun {tahun_scrape}...")
     fetch(tahun_scrape)

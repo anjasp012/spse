@@ -730,7 +730,7 @@
             // Load filter options for default year
             const defaultYear = 2026;
             loadLPSEOptions(defaultYear);
-            loadTahapanOptions(defaultYear);
+            // loadTahapanOptions(defaultYear);
             loadKementerianOptions();
 
             // Load favorites first
@@ -743,7 +743,7 @@
             $('#filterTahun').change(function () {
                 const tahun = $(this).val();
                 loadLPSEOptions(tahun);
-                loadTahapanOptions(tahun);
+                // loadTahapanOptions(tahun);
             });
 
             // Auto-reload on filter change

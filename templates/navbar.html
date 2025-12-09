@@ -23,6 +23,32 @@
         }
     }
 
+    /* Badge SOON - Blinking Animation */
+    .badge-soon {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 0.2rem 0.5rem;
+        border-radius: 12px;
+        margin-left: 0.3rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        animation: blink 1.5s ease-in-out infinite;
+        box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+    }
+
+    @keyframes blink {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.3;
+            transform: scale(0.95);
+        }
+    }
+
     /* Placeholder untuk mencegah konten melompat saat navbar menjadi fixed */
     .navbar-placeholder {
         display: none;
@@ -58,6 +84,12 @@
                              <i class="fas fa-handshake mr-1"></i> Non Tender
                          </a>
                      </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'eproc' %}active{% endif %}" href="#" onclick="return false;" style="cursor: default; opacity: 0.7;">
+                            <i class="fas fa-shopping-cart mr-1"></i> ePROC
+                            <span class="badge-soon">Soon</span>
+                        </a>
+                    </li>
                      {% if session.get('user_id') %}
                      <!-- User sudah login - tampilkan dropdown -->
                      <li class="nav-item dropdown">

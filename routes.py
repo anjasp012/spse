@@ -776,6 +776,42 @@ def create_routes(app):
                 'message': str(e)
             }), 500
 
+    @app.route('/api/check-session')
+    def check_session():
+        """Check if current session is still valid"""
+        if 'user_id' not in session or 'session_id' not in session:
+            return jsonify({'valid': False, 'reason': 'no_session'}), 200
+
+        try:
+            user = User.query.get(session['user_id'])
+            if not user:
+                return jsonify({'valid': False, 'reason': 'user_not_found'}), 200
+
+            # Check if session_id matches
+            if user.session_id != session['session_id'] and user.role != 'admin':
+                return jsonify({'valid': False, 'reason': 'session_mismatch'}), 200
+
+            # Check if account is expired
+            if user.active_until and datetime.utcnow() > user.active_until:
+                return jsonify({'valid': False, 'reason': 'account_expired'}), 200
+
+            # Check idle timeout
+            now_wib = datetime.now(jakarta)
+            if user.last_activity:
+                if user.last_activity.tzinfo is None:
+                    last_activity_wib = pytz.utc.localize(user.last_activity).astimezone(jakarta)
+                else:
+                    last_activity_wib = user.last_activity
+
+                idle_minutes = (now_wib - last_activity_wib).total_seconds() / 60
+                if idle_minutes > 30:  # 30 minutes idle timeout
+                    return jsonify({'valid': False, 'reason': 'idle_timeout'}), 200
+
+            return jsonify({'valid': True}), 200
+        except Exception as e:
+            app.logger.error(f"Session check error: {str(e)}")
+            return jsonify({'valid': False, 'reason': 'error'}), 500
+
     @app.route('/logout')
     def logout():
         user = User.query.filter_by(id=session['user_id']).first()

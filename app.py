@@ -20,7 +20,7 @@ create_routes(app)
 # ============================================================
 #  MIDDLEWARE CEK ACTIVE_UNTIL & IDLE TIMEOUT (WIB)
 # ============================================================
-MAX_IDLE_MINUTES = 15  # user akan di-logout jika idle lebih dari ini
+MAX_IDLE_MINUTES = 30  # user akan di-logout jika idle lebih dari ini
 JAKARTA_TZ = pytz.timezone('Asia/Jakarta')
 
 @app.before_request

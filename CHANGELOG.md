@@ -1,5 +1,64 @@
 # 🔧 CHANGELOG - Perbaikan Kode Python SPSE
 
+## 📅 Tanggal: 2025-12-15
+
+---
+
+## ✨ New Features
+
+### 1. ✅ Required Email Field for User Management
+**Files**: `models.py`, `routes.py`, `templates/admin/users.html`, `templates/admin/user_form.html`
+
+**Fitur Baru**:
+- Email sekarang **WAJIB** diisi untuk semua user
+- Email ditampilkan di tabel list users
+- Email dapat digunakan untuk login (alternatif username)
+- Validasi email unique (tidak boleh duplikat)
+
+**Perubahan Detail**:
+- **models.py**:
+  - Email field: `nullable=False` (dari `nullable=True`)
+  - Email tetap unique constraint
+
+- **routes.py**:
+  - Validasi email wajib di `admin_users_add()`
+  - Validasi email wajib di `admin_users_edit()`
+  - Validasi email unique (tidak boleh duplikat)
+
+- **templates/admin/users.html**:
+  - Tambah kolom Email di tabel
+  - Tampilkan email dengan icon envelope
+
+- **templates/admin/user_form.html**:
+  - Email field dengan `required` attribute
+  - Label dengan required mark (*)
+  - Update help text: "Email wajib diisi dan dapat digunakan untuk login"
+
+**Migration Files**:
+- `migration_email_required.py` - Script generator
+- `migration_email_required_mysql.sql` - MySQL migration
+- `migration_email_required_postgresql.sql` - PostgreSQL migration
+- `migration_email_required_sqlite.sql` - SQLite migration
+
+**Deployment Guides**:
+- `DEPLOYMENT_EMAIL_FIELD.md` - Panduan lengkap deployment
+- `QUICK_DEPLOY.md` - Quick reference deployment
+
+**Impact**: 🟡 HIGH - Feature enhancement + database migration required
+
+**Migration Steps**:
+1. Backup database terlebih dahulu
+2. Jalankan migration SQL sesuai database yang dipakai
+3. Script akan otomatis mengisi email kosong dengan `username@localhost.local`
+4. Email column akan diubah menjadi NOT NULL dan UNIQUE
+
+**Backward Compatibility**:
+- ✅ User existing yang belum punya email akan diberi default email
+- ✅ Login dengan username tetap berfungsi
+- ✅ Login dengan email juga berfungsi
+
+---
+
 ## 📅 Tanggal: 2025-11-25
 
 ---

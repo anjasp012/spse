@@ -100,15 +100,18 @@ def create_routes(app):
 
         if request.method == 'POST':
             try:
-                username = request.form.get('username', '').strip()
+                username_or_email = request.form.get('username', '').strip()
                 password = request.form.get('password', '')
 
                 # Validasi input
-                if not username or not password:
-                    flash('Username dan password harus diisi', 'danger')
+                if not username_or_email or not password:
+                    flash('Username/Email dan password harus diisi', 'danger')
                     return redirect(url_for('login'))
 
-                user = User.query.filter_by(username=username).first()
+                # Cari user berdasarkan username atau email
+                user = User.query.filter(
+                    (User.username == username_or_email) | (User.email == username_or_email)
+                ).first()
 
                 if not user:
                     flash('User tidak ditemukan', 'danger')
@@ -139,7 +142,7 @@ def create_routes(app):
                 session['username'] = user.username
                 session['role'] = user.role
 
-                app.logger.info(f"User logged in: {username}")
+                app.logger.info(f"User logged in: {user.username}")
                 flash(f'Selamat datang, {user.username}!', 'success')
                 if user.role == 'admin':
                     return redirect(url_for('admin_dashboard'))
@@ -228,6 +231,7 @@ def create_routes(app):
         if request.method == 'POST':
             try:
                 username = request.form.get('username', '').strip()
+                email = request.form.get('email', '').strip()  # Email required, no default to None
                 password = request.form.get('password', '')
                 confirm_password = request.form.get('confirm_password', '')
                 role = request.form.get('role', 'user')
@@ -236,6 +240,10 @@ def create_routes(app):
                 # Validation
                 if not username or not password:
                     flash('Username dan password harus diisi', 'danger')
+                    return redirect(url_for('admin_users_add'))
+
+                if not email:
+                    flash('Email harus diisi', 'danger')
                     return redirect(url_for('admin_users_add'))
 
                 if len(username) < 3 or len(username) > 50:
@@ -263,6 +271,11 @@ def create_routes(app):
                     flash('Username sudah digunakan', 'danger')
                     return redirect(url_for('admin_users_add'))
 
+                # Check if email already exists
+                if User.query.filter_by(email=email).first():
+                    flash('Email sudah digunakan', 'danger')
+                    return redirect(url_for('admin_users_add'))
+
                 # Parse active_until
                 active_until = None
                 if active_until_str:
@@ -282,6 +295,7 @@ def create_routes(app):
                 # Create user
                 new_user = User(
                     username=username,
+                    email=email,
                     role=role,
                     active_until=active_until
                 )
@@ -309,6 +323,7 @@ def create_routes(app):
         if request.method == 'POST':
             try:
                 username = request.form.get('username', '').strip()
+                email = request.form.get('email', '').strip()  # Email required, no default to None
                 password = request.form.get('password', '')
                 confirm_password = request.form.get('confirm_password', '')
                 role = request.form.get('role', 'user')
@@ -317,6 +332,10 @@ def create_routes(app):
                 # Validation
                 if not username:
                     flash('Username harus diisi', 'danger')
+                    return redirect(url_for('admin_users_edit', user_id=user_id))
+
+                if not email:
+                    flash('Email harus diisi', 'danger')
                     return redirect(url_for('admin_users_edit', user_id=user_id))
 
                 if len(username) < 3 or len(username) > 50:
@@ -331,6 +350,12 @@ def create_routes(app):
                 existing_user = User.query.filter_by(username=username).first()
                 if existing_user and existing_user.id != user_id:
                     flash('Username sudah digunakan', 'danger')
+                    return redirect(url_for('admin_users_edit', user_id=user_id))
+
+                # Check if email already exists (except current user)
+                existing_email = User.query.filter_by(email=email).first()
+                if existing_email and existing_email.id != user_id:
+                    flash('Email sudah digunakan', 'danger')
                     return redirect(url_for('admin_users_edit', user_id=user_id))
 
                 # Validate password if provided
@@ -359,6 +384,7 @@ def create_routes(app):
 
                 # Update user
                 user.username = username
+                user.email = email
                 user.role = role
                 user.active_until = active_until
 

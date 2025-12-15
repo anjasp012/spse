@@ -102,6 +102,7 @@
                 <tr>
                     <th width="50">ID</th>
                     <th>Username</th>
+                    <th>Email</th>
                     <th width="100">Role</th>
                     <th width="180">Active Until</th>
                     <th width="100">Status</th>
@@ -117,6 +118,13 @@
                         <i class="fas fa-user mr-2 text-muted"></i>{{ user.username }}
                         {% if user.id == session.user_id %}
                         <span class="badge badge-info ml-2">You</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.email %}
+                        <i class="fas fa-envelope mr-2 text-muted"></i><small>{{ user.email }}</small>
+                        {% else %}
+                        <span class="text-muted"><small>-</small></span>
                         {% endif %}
                     </td>
                     <td>
@@ -163,7 +171,7 @@
                 {% endfor %}
                 {% else %}
                 <tr>
-                    <td colspan="6" class="text-center py-5">
+                    <td colspan="7" class="text-center py-5">
                         <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
                         <p class="text-muted">Tidak ada user</p>
                     </td>

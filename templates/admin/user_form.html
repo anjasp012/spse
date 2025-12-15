@@ -79,6 +79,19 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="email">
+                        <i class="fas fa-envelope mr-1"></i>Email
+                        <span class="required-mark">*</span>
+                    </label>
+                    <input type="email" class="form-control form-control-lg" id="email" name="email"
+                        value="{{ user.email if user else '' }}" required maxlength="120"
+                        placeholder="Masukkan email">
+                    <small class="form-text text-muted">
+                        Email wajib diisi dan dapat digunakan untuk login
+                    </small>
+                </div>
+
+                <div class="form-group">
                     <label for="password">
                         <i class="fas fa-lock mr-1"></i>Password
                         <span class="required-mark">{{ '*' if action == 'add' else '' }}</span>

@@ -166,6 +166,59 @@ def create_routes(app):
             return redirect(url_for('login'))
         return render_template('favorites.html')
 
+    @app.route('/profile', methods=['GET', 'POST'])
+    @login_required
+    def profile():
+        user = User.query.get(session['user_id'])
+
+        if request.method == 'POST':
+            try:
+                email = request.form.get('email', '').strip()
+                password = request.form.get('password', '')
+                confirm_password = request.form.get('confirm_password', '')
+
+                # Validation
+                if not email:
+                    flash('Email wajib diisi', 'danger')
+                    return redirect(url_for('profile'))
+
+                # Check email unique (except self)
+                existing = User.query.filter_by(email=email).first()
+                if existing and existing.id != user.id:
+                    flash('Email sudah digunakan oleh user lain', 'danger')
+                    return redirect(url_for('profile'))
+
+                # Password validation
+                if password:
+                    if len(password) < 6:
+                        flash('Password minimal 6 karakter', 'danger')
+                        return redirect(url_for('profile'))
+                    if password != confirm_password:
+                        flash('Konfirmasi password tidak cocok', 'danger')
+                        return redirect(url_for('profile'))
+                    user.set_password(password)
+
+                # Update data
+                user.email = email
+                db.session.commit()
+
+                # Update session info if needed (not username since it's readonly)
+                app.logger.info(f"User profile updated: {user.username}")
+
+                flash('Profile berhasil diperbarui', 'success')
+                return redirect(url_for('profile'))
+
+            except Exception as e:
+                db.session.rollback()
+                app.logger.error(f"Profile update error: {str(e)}")
+                flash('Terjadi kesalahan saat menyimpan data', 'danger')
+
+        # Render template based on role
+        if user.role == 'admin':
+            return render_template('admin/profile.html', user=user, active_page='profile')
+        else:
+            return render_template('profile.html', user=user, active_page='profile')
+
     @app.route("/admin")
     @admin_required
     def admin_dashboard():

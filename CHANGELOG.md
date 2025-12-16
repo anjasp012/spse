@@ -46,6 +46,21 @@
 
 **Impact**: 🟡 HIGH - Feature enhancement + database migration required
 
+### 2. ✅ User Profile Management
+**Files**: `templates/navbar.html`, `templates/admin/base.html`, `templates/profile.html`, `templates/admin/profile.html`, `routes.py`
+
+**Fitur Baru**:
+- Menu **Profile** di navbar (User & Admin)
+- Halaman edit profile user (ganti email & password)
+- Halaman edit profile admin (ganti email & password)
+- Tombol logout dipindah ke dalam dropdown menu
+
+**Detail**:
+- User biasa: Layout menyesuaikan tampilan publik
+- Admin: Layout terintegrasi dashboard admin
+- Validasi keamanan: Username read-only, Password confirmation
+
+
 **Migration Steps**:
 1. Backup database terlebih dahulu
 2. Jalankan migration SQL sesuai database yang dipakai

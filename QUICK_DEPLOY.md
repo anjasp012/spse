@@ -24,19 +24,22 @@ mysqldump -u root -p database_name > backup_$(date +%Y%m%d).sql
 
 **Jalankan Migration:**
 ```bash
-mysql -u root -p database_name < migration_email_required_mysql.sql
-```
+# Opsi 1: Pakai file SQL yang compatible
+mysql -u root -p database_name < migration_email_required_mysql_safe.sql
 
-atau manual:
-```bash
+# Opsi 2: Manual (lebih aman)
 mysql -u root -p database_name
 ```
 ```sql
-ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(120) DEFAULT NULL;
+-- Jalankan satu per satu:
+ALTER TABLE users ADD COLUMN email VARCHAR(120) DEFAULT NULL AFTER username;
 UPDATE users SET email = CONCAT(username, '@localhost.local') WHERE email IS NULL OR email = '';
-ALTER TABLE users MODIFY COLUMN email VARCHAR(120) NOT NULL, ADD UNIQUE KEY unique_email (email);
+ALTER TABLE users MODIFY COLUMN email VARCHAR(120) NOT NULL;
+ALTER TABLE users ADD UNIQUE KEY unique_email (email);
 SELECT id, username, email FROM users;
 ```
+
+**Catatan**: Jika error "Duplicate column", berarti kolom sudah ada. Skip query pertama, langsung jalankan UPDATE dan seterusnya.
 
 ### 4️⃣ Restart App
 ```bash
